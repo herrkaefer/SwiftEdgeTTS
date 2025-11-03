@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - '*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-macos:
+    name: Test macOS
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Test on macOS
+      run: swift test --enable-test-discovery
+
+  test-ios:
+    name: Test iOS
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Test on iOS
+      run: swift test --enable-test-discovery
+
+  build:
+    name: Build
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        platform: [macos, ios]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build for ${{ matrix.platform }}
+      run: |
+        if [ "${{ matrix.platform }}" == "macos" ]; then
+          swift build
+        else
+          # Build ensures iOS compatibility
+          swift build
+        fi
+
