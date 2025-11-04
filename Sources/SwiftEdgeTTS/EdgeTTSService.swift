@@ -142,7 +142,7 @@ public final class EdgeTTSService: EdgeTTSClient {
 
     // MARK: - Public API
 
-    public func synthesize(text: String, voice: String, outputURL: URL) async throws -> URL {
+    public func synthesize(text: String, voice: String, outputURL: URL, rate: String? = nil, volume: String? = nil, pitch: String? = nil) async throws -> URL {
         // Input validation
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw EdgeTTSError.synthesisFailed
@@ -152,7 +152,7 @@ public final class EdgeTTSService: EdgeTTSClient {
         }
 
         do {
-            let audioData = try await synthesizeViaWebSocket(text: text, voice: voice)
+            let audioData = try await synthesizeViaWebSocket(text: text, voice: voice, rate: rate, volume: volume, pitch: pitch)
 
             guard !audioData.isEmpty else {
                 throw EdgeTTSError.synthesisFailed
@@ -175,7 +175,7 @@ public final class EdgeTTSService: EdgeTTSClient {
         }
     }
 
-    public func synthesizeMultiple(texts: [String], voice: String, outputDirectory: URL) async throws -> [URL?] {
+    public func synthesizeMultiple(texts: [String], voice: String, outputDirectory: URL, rate: String? = nil, volume: String? = nil, pitch: String? = nil) async throws -> [URL?] {
         // Input validation
         guard !texts.isEmpty else {
             return []
@@ -193,7 +193,7 @@ public final class EdgeTTSService: EdgeTTSClient {
             do {
                 let filename = UUID().uuidString + ".mp3"
                 let outputURL = outputDirectory.appendingPathComponent(filename)
-                let url = try await synthesize(text: text, voice: voice, outputURL: outputURL)
+                let url = try await synthesize(text: text, voice: voice, outputURL: outputURL, rate: rate, volume: volume, pitch: pitch)
                 results.append(url)
             } catch {
                 results.append(nil)
@@ -255,8 +255,8 @@ public final class EdgeTTSService: EdgeTTSClient {
 
     // MARK: - Private Implementation
 
-    private func synthesizeViaWebSocket(text: String, voice: String) async throws -> Data {
-        let ssml = createSSML(text: text, voice: voice)
+    private func synthesizeViaWebSocket(text: String, voice: String, rate: String?, volume: String?, pitch: String?) async throws -> Data {
+        let ssml = createSSML(text: text, voice: voice, rate: rate, volume: volume, pitch: pitch)
 
         let connectionId = UUID().uuidString.replacingOccurrences(of: "-", with: "")
         var components = URLComponents(string: Self.synthesizeBaseURL)!
@@ -372,7 +372,7 @@ public final class EdgeTTSService: EdgeTTSClient {
     }
 
     /// Create SSML (Speech Synthesis Markup Language) for the text
-    private func createSSML(text: String, voice: String) -> String {
+    private func createSSML(text: String, voice: String, rate: String?, volume: String?, pitch: String?) -> String {
         // Escape XML special characters (must escape & first to avoid double-escaping)
         let escapedText = text
             .replacingOccurrences(of: "&", with: "&amp;")
@@ -392,8 +392,24 @@ public final class EdgeTTSService: EdgeTTSClient {
             .replacingOccurrences(of: "\"", with: "")
             .replacingOccurrences(of: "'", with: "")
 
+        // Sanitize prosody parameters to prevent XML injection
+        let sanitizedRate = sanitizeProsodyValue(rate ?? "+0%")
+        let sanitizedVolume = sanitizeProsodyValue(volume ?? "+0%")
+        let sanitizedPitch = sanitizeProsodyValue(pitch ?? "+0Hz")
+
         // Single-line minimal SSML with required namespaces and one voice/prosody block (per edge-tts 7.2.1 behavior)
-        return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='\(locale)'><voice name='\(escapedVoice)'><prosody rate='+0%' pitch='+0Hz' volume='+0%'>\(escapedText)</prosody></voice></speak>"
+        return "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='\(locale)'><voice name='\(escapedVoice)'><prosody rate='\(sanitizedRate)' pitch='\(sanitizedPitch)' volume='\(sanitizedVolume)'>\(escapedText)</prosody></voice></speak>"
+    }
+
+    /// Sanitize prosody parameter values to prevent XML injection
+    private func sanitizeProsodyValue(_ value: String) -> String {
+        // Remove XML special characters and keep only safe characters (+, -, 0-9, %, Hz, ., etc.)
+        return value
+            .replacingOccurrences(of: "&", with: "")
+            .replacingOccurrences(of: "<", with: "")
+            .replacingOccurrences(of: ">", with: "")
+            .replacingOccurrences(of: "\"", with: "")
+            .replacingOccurrences(of: "'", with: "")
     }
 
     /// Extract locale like "en-US" from voices like "en-US-GuyNeural"

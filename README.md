@@ -14,6 +14,7 @@ A Swift Package for Microsoft Edge Text-to-Speech (TTS) API integration. This pa
 - ✅ **400+ neural voices** across 100+ languages and locales
 - ✅ **High-quality MP3 audio** output (24kHz, 48kbitrate)
 - ✅ **Automatic SSML generation** with proper XML escaping
+- ✅ **Adjustable speech parameters** - rate, volume, and pitch control
 - ✅ **Thread-safe** token caching and clock synchronization
 - ✅ **iOS 15+** and **macOS 12+** support
 - ✅ **Comprehensive error handling** with detailed error types
@@ -61,6 +62,52 @@ do {
 }
 ```
 
+### Adjusting Speech Parameters
+
+You can customize the speech rate, volume, and pitch:
+
+```swift
+// Slower speech rate
+let audioURL = try await ttsService.synthesize(
+    text: "Hello, world!",
+    voice: "en-US-JennyNeural",
+    outputURL: outputURL,
+    rate: "-50%",      // 50% slower
+    volume: nil,
+    pitch: nil
+)
+
+// Lower volume
+let audioURL = try await ttsService.synthesize(
+    text: "Hello, world!",
+    voice: "en-US-JennyNeural",
+    outputURL: outputURL,
+    rate: nil,
+    volume: "-50%",    // 50% quieter
+    pitch: nil
+)
+
+// Lower pitch
+let audioURL = try await ttsService.synthesize(
+    text: "Hello, world!",
+    voice: "en-US-JennyNeural",
+    outputURL: outputURL,
+    rate: nil,
+    volume: nil,
+    pitch: "-50Hz"     // 50Hz lower pitch
+)
+
+// All parameters together
+let audioURL = try await ttsService.synthesize(
+    text: "Hello, world!",
+    voice: "en-US-JennyNeural",
+    outputURL: outputURL,
+    rate: "+25%",      // 25% faster
+    volume: "+10%",    // 10% louder
+    pitch: "+20Hz"     // 20Hz higher pitch
+)
+```
+
 ### Batch Synthesis
 
 Generate multiple audio files at once:
@@ -79,6 +126,16 @@ let results = try await ttsService.synthesizeMultiple(
     texts: texts,
     voice: "en-US-JennyNeural",
     outputDirectory: outputDirectory
+)
+
+// With prosody parameters
+let results = try await ttsService.synthesizeMultiple(
+    texts: texts,
+    voice: "en-US-JennyNeural",
+    outputDirectory: outputDirectory,
+    rate: "-30%",      // Slower speech rate
+    volume: nil,
+    pitch: nil
 )
 
 // Process results (nil indicates a failed synthesis)
@@ -153,11 +210,18 @@ try await ttsService.synthesize(
 
 ```swift
 protocol EdgeTTSClient {
-    func synthesize(text: String, voice: String, outputURL: URL) async throws -> URL
-    func synthesizeMultiple(texts: [String], voice: String, outputDirectory: URL) async throws -> [URL?]
+    func synthesize(text: String, voice: String, outputURL: URL, rate: String?, volume: String?, pitch: String?) async throws -> URL
+    func synthesizeMultiple(texts: [String], voice: String, outputDirectory: URL, rate: String?, volume: String?, pitch: String?) async throws -> [URL?]
     func getAvailableVoices() async throws -> [EdgeTTSVoice]
 }
 ```
+
+**Prosody Parameters:**
+- `rate`: Optional speech rate adjustment (e.g., `"+50%"`, `"-50%"`). Default is `"+0%"`
+- `volume`: Optional volume adjustment (e.g., `"+50%"`, `"-50%"`). Default is `"+0%"`
+- `pitch`: Optional pitch adjustment (e.g., `"+50Hz"`, `"-50Hz"`). Default is `"+0Hz"`
+
+For backward compatibility, the protocol extension provides convenience methods without prosody parameters that use default values.
 
 ### `EdgeTTSService`
 
@@ -198,6 +262,23 @@ do {
     print("Unknown error: \(error)")
 }
 ```
+
+## Speech Parameters
+
+### Rate, Volume, and Pitch
+
+You can adjust the speech rate, volume, and pitch using the optional parameters:
+
+- **Rate**: Controls speech speed. Format: `"+X%"` (faster) or `"-X%"` (slower)
+  - Examples: `"+50%"` (50% faster), `"-50%"` (50% slower)
+
+- **Volume**: Controls speech volume. Format: `"+X%"` (louder) or `"-X%"` (quieter)
+  - Examples: `"+50%"` (50% louder), `"-50%"` (50% quieter)
+
+- **Pitch**: Controls voice pitch. Format: `"+XHz"` (higher) or `"-XHz"` (lower)
+  - Examples: `"+50Hz"` (50Hz higher), `"-50Hz"` (50Hz lower)
+
+These parameters are optional and default to `"+0%"` (rate/volume) or `"+0Hz"` (pitch) if not specified. All parameters use SSML prosody tags internally, similar to the Python [edge-tts](https://github.com/rany2/edge-tts) library.
 
 ## Voice Selection
 

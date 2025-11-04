@@ -383,6 +383,132 @@ final class EdgeTTSServiceTests: XCTestCase {
         XCTAssertEqual(results.count, 0, "Should return empty array for empty input")
     }
 
+    // MARK: - Prosody Parameters Tests
+
+    func testSynthesizeWithRate() async throws {
+        let text = "Hello, this is a test with slower rate."
+        let voice = "en-US-JennyNeural"
+        let outputURL = tempDirectory.appendingPathComponent("test_rate.mp3")
+
+        let resultURL = try await service.synthesize(
+            text: text,
+            voice: voice,
+            outputURL: outputURL,
+            rate: "-50%",
+            volume: nil,
+            pitch: nil
+        )
+
+        XCTAssertEqual(resultURL, outputURL, "Should return the output URL")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputURL.path),
+            "Audio file should be created"
+        )
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: outputURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        XCTAssertGreaterThan(fileSize, 0, "Audio file should not be empty")
+    }
+
+    func testSynthesizeWithVolume() async throws {
+        let text = "Hello, this is a test with lower volume."
+        let voice = "en-US-JennyNeural"
+        let outputURL = tempDirectory.appendingPathComponent("test_volume.mp3")
+
+        _ = try await service.synthesize(
+            text: text,
+            voice: voice,
+            outputURL: outputURL,
+            rate: nil,
+            volume: "-50%",
+            pitch: nil
+        )
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputURL.path),
+            "Audio file should be created"
+        )
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: outputURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        XCTAssertGreaterThan(fileSize, 0, "Audio file should not be empty")
+    }
+
+    func testSynthesizeWithPitch() async throws {
+        let text = "Hello, this is a test with lower pitch."
+        let voice = "en-US-JennyNeural"
+        let outputURL = tempDirectory.appendingPathComponent("test_pitch.mp3")
+
+        _ = try await service.synthesize(
+            text: text,
+            voice: voice,
+            outputURL: outputURL,
+            rate: nil,
+            volume: nil,
+            pitch: "-50Hz"
+        )
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputURL.path),
+            "Audio file should be created"
+        )
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: outputURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        XCTAssertGreaterThan(fileSize, 0, "Audio file should not be empty")
+    }
+
+    func testSynthesizeWithAllProsodyParameters() async throws {
+        let text = "Hello, this is a test with all prosody parameters adjusted."
+        let voice = "en-US-JennyNeural"
+        let outputURL = tempDirectory.appendingPathComponent("test_all_prosody.mp3")
+
+        _ = try await service.synthesize(
+            text: text,
+            voice: voice,
+            outputURL: outputURL,
+            rate: "+25%",
+            volume: "+10%",
+            pitch: "+20Hz"
+        )
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: outputURL.path),
+            "Audio file should be created"
+        )
+
+        let attributes = try FileManager.default.attributesOfItem(atPath: outputURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        XCTAssertGreaterThan(fileSize, 0, "Audio file should not be empty")
+    }
+
+    func testSynthesizeMultipleWithProsodyParameters() async throws {
+        let texts = [
+            "First test sentence.",
+            "Second test sentence.",
+            "Third test sentence."
+        ]
+        let voice = "en-US-JennyNeural"
+
+        let results = try await service.synthesizeMultiple(
+            texts: texts,
+            voice: voice,
+            outputDirectory: tempDirectory,
+            rate: "-30%",
+            volume: nil,
+            pitch: nil
+        )
+
+        XCTAssertEqual(results.count, texts.count, "Should return same number of results as inputs")
+
+        let fileCount = try FileManager.default.contentsOfDirectory(
+            at: tempDirectory,
+            includingPropertiesForKeys: nil
+        ).filter { $0.pathExtension == "mp3" }.count
+
+        XCTAssertGreaterThanOrEqual(fileCount, texts.count, "Should create at least one audio file per text")
+    }
+
     func testSynthesizeMultipleWithDifferentLanguages() async throws {
         let texts = [
             "Hello, world!",
