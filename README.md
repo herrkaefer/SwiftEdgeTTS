@@ -1,8 +1,8 @@
 # SwiftEdgeTTS
 
 [![CI](https://github.com/herrkaefer/SwiftEdgeTTS/actions/workflows/ci.yml/badge.svg)](https://github.com/herrkaefer/SwiftEdgeTTS/actions/workflows/ci.yml)
-[![Swift Package Index](https://img.shields.io/endpoint?url=https://swiftpackageindex.com/api/packages/herrkaefer/SwiftEdgeTTS/badge?type=swift-versions)](https://swiftpackageindex.com/herrkaefer/SwiftEdgeTTS)
-[![Platforms](https://img.shields.io/endpoint?url=https://swiftpackageindex.com/api/packages/herrkaefer/SwiftEdgeTTS/badge?type=platforms)](https://swiftpackageindex.com/herrkaefer/SwiftEdgeTTS)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fherrkaefer%2FSwiftEdgeTTS%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/herrkaefer/SwiftEdgeTTS)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fherrkaefer%2FSwiftEdgeTTS%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/herrkaefer/SwiftEdgeTTS)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A Swift Package for Microsoft Edge Text-to-Speech (TTS) API integration. This package provides a clean, simple interface to generate high-quality audio files from text using Edge-TTS without any Python dependencies.
