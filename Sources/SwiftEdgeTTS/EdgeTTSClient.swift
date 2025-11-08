@@ -26,8 +26,9 @@ public protocol EdgeTTSClient {
     func synthesizeMultiple(texts: [String], voice: String, outputDirectory: URL, rate: String?, volume: String?, pitch: String?) async throws -> [URL?]
 
     /// Get available voices from Edge-TTS
-    /// - Returns: Array of available voices
-    func getAvailableVoices() async throws -> [EdgeTTSVoice]
+    /// - Parameter languageCode: Optional language code to filter voices (e.g., "en", "en-us"). If nil, returns all voices.
+    /// - Returns: Dictionary of available voices grouped by language code
+    func getAvailableVoices(languageCode: String?) async throws -> [String: [EdgeTTSVoice]]
 }
 
 /// Protocol extension to provide default parameter values for backward compatibility
@@ -57,38 +58,26 @@ extension EdgeTTSClient {
 /// Edge-TTS Voice model
 @available(macOS 12.0, iOS 15.0, *)
 public struct EdgeTTSVoice: Codable {
-    public let name: String
     public let shortName: String
     public let gender: String
+    public let contentCategories: String
+    public let voicePersonalities: String
     public let locale: String
-    public let sampleRate: String
-    public let voiceType: String
-    public let status: String
-    public let wordsPerMinute: String?
-    public let friendlyName: String?
 
     enum CodingKeys: String, CodingKey {
-        case name = "Name"
         case shortName = "ShortName"
         case gender = "Gender"
+        case contentCategories = "ContentCategories"
+        case voicePersonalities = "VoicePersonalities"
         case locale = "Locale"
-        case sampleRate = "SampleRate"
-        case voiceType = "VoiceType"
-        case status = "Status"
-        case wordsPerMinute = "WordsPerMinute"
-        case friendlyName = "FriendlyName"
     }
 
-    public init(name: String, shortName: String, gender: String, locale: String, sampleRate: String, voiceType: String, status: String, wordsPerMinute: String? = nil, friendlyName: String? = nil) {
-        self.name = name
+    public init(shortName: String, gender: String, contentCategories: String, voicePersonalities: String, locale: String) {
         self.shortName = shortName
         self.gender = gender
+        self.contentCategories = contentCategories
+        self.voicePersonalities = voicePersonalities
         self.locale = locale
-        self.sampleRate = sampleRate
-        self.voiceType = voiceType
-        self.status = status
-        self.wordsPerMinute = wordsPerMinute
-        self.friendlyName = friendlyName
     }
 }
 

@@ -31,19 +31,24 @@ final class EdgeTTSServiceTests: XCTestCase {
     }
 
     func testGetAvailableVoices() async throws {
-        do {
-            let voices = try await service.getAvailableVoices()
+        let voicesDict = try await service.getAvailableVoices(languageCode: nil)
 
-            XCTAssertFalse(voices.isEmpty, "Should return at least one voice")
+        XCTAssertFalse(voicesDict.isEmpty, "Should return at least one language group")
 
-            // Check that voices have required properties
-            let firstVoice = try XCTUnwrap(voices.first)
-            XCTAssertFalse(firstVoice.name.isEmpty, "Voice should have a name")
+        // Check that we have voices for common languages
+        XCTAssertNotNil(voicesDict["en"], "Should have English voices")
+        XCTAssertNotNil(voicesDict["zh"], "Should have Chinese voices")
+        XCTAssertNotNil(voicesDict["ja"], "Should have Japanese voices")
+
+        // Check that voices have required properties
+        if let englishVoices = voicesDict["en"], let firstVoice = englishVoices.first {
+            XCTAssertFalse(firstVoice.shortName.isEmpty, "Voice should have a shortName")
             XCTAssertFalse(firstVoice.locale.isEmpty, "Voice should have a locale")
-        } catch EdgeTTSError.networkError(let error as NSError) where error.code == 401 {
-            throw XCTSkip("Voices API returned 401; skipping test due to service restrictions")
-        } catch EdgeTTSError.invalidResponse {
-            throw XCTSkip("Voices API changed response format; skipping test")
+            XCTAssertFalse(firstVoice.gender.isEmpty, "Voice should have a gender")
+            XCTAssertFalse(firstVoice.contentCategories.isEmpty, "Voice should have contentCategories")
+            XCTAssertFalse(firstVoice.voicePersonalities.isEmpty, "Voice should have voicePersonalities")
+        } else {
+            XCTFail("Should have at least one English voice")
         }
     }
 
@@ -539,28 +544,42 @@ final class EdgeTTSServiceTests: XCTestCase {
     }
 
     func testGetVoicesFiltersByLanguage() async throws {
-        do {
-            let voices = try await service.getAvailableVoices()
+        // Test without language code - should return all voices
+        let allVoices = try await service.getAvailableVoices(languageCode: nil)
+        XCTAssertFalse(allVoices.isEmpty, "Should return voices for multiple languages")
+        XCTAssertNotNil(allVoices["en"], "Should have English voices")
+        XCTAssertNotNil(allVoices["zh"], "Should have Chinese voices")
+        XCTAssertNotNil(allVoices["ja"], "Should have Japanese voices")
 
-            // Test that we can find voices for multiple languages
-            let englishVoices = voices.filter { $0.locale.hasPrefix("en") }
-            let chineseVoices = voices.filter { $0.locale.hasPrefix("zh") }
-            let japaneseVoices = voices.filter { $0.locale.hasPrefix("ja") }
+        // Test with language code filter - English (exact match)
+        let englishVoices = try await service.getAvailableVoices(languageCode: "en")
+        XCTAssertFalse(englishVoices.isEmpty, "Should return English voices")
+        XCTAssertNotNil(englishVoices["en"], "Should have 'en' key")
+        XCTAssertNil(englishVoices["en-us"], "Should not have 'en-us' key when filtering for exact 'en'")
+        XCTAssertNil(englishVoices["zh"], "Should not have Chinese voices when filtering for English")
 
-            XCTAssertFalse(englishVoices.isEmpty, "Should have English voices")
-            XCTAssertFalse(chineseVoices.isEmpty, "Should have Chinese voices")
-            XCTAssertFalse(japaneseVoices.isEmpty, "Should have Japanese voices")
+        // Test with language code filter - Chinese (exact match)
+        let chineseVoices = try await service.getAvailableVoices(languageCode: "zh")
+        XCTAssertFalse(chineseVoices.isEmpty, "Should return Chinese voices")
+        XCTAssertNotNil(chineseVoices["zh"], "Should have 'zh' key")
+        XCTAssertNil(chineseVoices["zh-cn"], "Should not have 'zh-cn' key when filtering for exact 'zh'")
+        XCTAssertNil(chineseVoices["en"], "Should not have English voices when filtering for Chinese")
 
-            // Test voice properties
-            if let englishVoice = englishVoices.first {
-                XCTAssertFalse(englishVoice.name.isEmpty, "Voice should have name")
-                XCTAssertFalse(englishVoice.shortName.isEmpty, "Voice should have shortName")
-                XCTAssertFalse(englishVoice.gender.isEmpty, "Voice should have gender")
-            }
-        } catch EdgeTTSError.networkError(let error as NSError) where error.code == 401 {
-            throw XCTSkip("Voices API returned 401; skipping test due to service restrictions")
-        } catch EdgeTTSError.invalidResponse {
-            throw XCTSkip("Voices API changed response format; skipping test")
+        // Test with locale-specific filter - en-us (exact match)
+        let enUsVoices = try await service.getAvailableVoices(languageCode: "en-us")
+        XCTAssertFalse(enUsVoices.isEmpty, "Should return en-us voices")
+        XCTAssertNotNil(enUsVoices["en-us"], "Should have 'en-us' key")
+        XCTAssertNil(enUsVoices["en"], "Should not have 'en' key when filtering for exact 'en-us'")
+
+        // Test voice properties
+        if let englishVoicesArray = englishVoices["en"], let firstVoice = englishVoicesArray.first {
+            XCTAssertFalse(firstVoice.shortName.isEmpty, "Voice should have shortName")
+            XCTAssertFalse(firstVoice.gender.isEmpty, "Voice should have gender")
+            XCTAssertFalse(firstVoice.contentCategories.isEmpty, "Voice should have contentCategories")
+            XCTAssertFalse(firstVoice.voicePersonalities.isEmpty, "Voice should have voicePersonalities")
+            XCTAssertFalse(firstVoice.locale.isEmpty, "Voice should have locale")
+        } else {
+            XCTFail("Should have at least one English voice")
         }
     }
 }
