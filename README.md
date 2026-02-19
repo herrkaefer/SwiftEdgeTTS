@@ -17,6 +17,7 @@ A Swift Package for Microsoft Edge Text-to-Speech (TTS) API integration. This pa
 - ✅ **Adjustable speech parameters** - rate, volume, and pitch control
 - ✅ **Thread-safe** token caching and clock synchronization
 - ✅ **iOS 15+** and **macOS 12+** support
+- ✅ **Aligned with edge-tts 7.2.7** WebSocket handshake behavior
 - ✅ **Comprehensive error handling** with detailed error types
 
 ## Installation
@@ -27,7 +28,7 @@ Add the package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/herrkaefer/SwiftEdgeTTS.git", from: "1.0.0")
+    .package(url: "https://github.com/herrkaefer/SwiftEdgeTTS.git", from: "1.3.0")
 ]
 ```
 
@@ -35,6 +36,13 @@ Or in Xcode:
 1. File → Add Packages...
 2. Enter the repository URL: `https://github.com/herrkaefer/SwiftEdgeTTS.git`
 3. Select the version or branch
+
+## Versioning
+
+Swift Package versioning is managed via Git tags (SemVer), not in `Package.swift`.
+
+- Existing release tags in this repository include: `1.0.0`, `v1.1.0`, `v1.2.0`
+- Current release tag: `v1.3.0`
 
 ## Quick Start
 
@@ -204,6 +212,23 @@ try await ttsService.synthesize(
 )
 ```
 
+## Audio Demos
+
+| Language | Voice | Demo |
+| --- | --- | --- |
+| English | `en-US-JennyNeural` | [Play](artifacts/demos/demo-en.mp3) |
+| Chinese (Mandarin) | `zh-CN-XiaoxiaoNeural` | [Play](artifacts/demos/demo-zh.mp3) |
+| Japanese | `ja-JP-NanamiNeural` | [Play](artifacts/demos/demo-ja.mp3) |
+| Spanish | `es-ES-ElviraNeural` | [Play](artifacts/demos/demo-es.mp3) |
+| French | `fr-FR-DeniseNeural` | [Play](artifacts/demos/demo-fr.mp3) |
+| German | `de-DE-KatjaNeural` | [Play](artifacts/demos/demo-de.mp3) |
+| Korean | `ko-KR-SunHiNeural` | [Play](artifacts/demos/demo-ko.mp3) |
+| Russian | `ru-RU-SvetlanaNeural` | [Play](artifacts/demos/demo-ru.mp3) |
+
+## Edge-TTS Compatibility
+
+This package's current synthesis handshake and headers are aligned with Python [edge-tts](https://github.com/rany2/edge-tts) `7.2.7`.
+
 ## API Reference
 
 ### `EdgeTTSClient` Protocol
@@ -364,6 +389,3 @@ This work has been inspired by the Python [edge-tts](https://github.com/rany2/ed
 MIT License
 
 Copyright (c) 2024 SwiftEdgeTTS Contributors
-
-
-

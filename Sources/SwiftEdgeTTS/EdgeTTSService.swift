@@ -44,19 +44,21 @@ public final class EdgeTTSService: EdgeTTSClient {
     // Edge-TTS API endpoints
     private let authURL = "https://edge.microsoft.com/translate/auth"
     private static let voicesBaseURL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/voices/list"
-    private static let synthesizeBaseURL = "https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1"
+    private static let synthesizeBaseURL = "wss://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1"
     private static let trustedClientToken = "6A5AA1D4EAFF4E9FB37E23D68491D6F4"
-    private static let secMsGecVersion = "1-130.0.2849.68"
+    private static let chromiumFullVersion = "143.0.3650.75"
+    private static let secMsGecVersion = "1-143.0.3650.75"
     private static let windowsEpochOffset: TimeInterval = 11644473600
     private static let baseHeaders: [String: String] = [
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
-        "Accept-Encoding": "gzip, deflate, br",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+        "Accept-Encoding": "gzip, deflate, br, zstd",
         "Accept-Language": "en-US,en;q=0.9"
     ]
     private static let websocketHeaders: [String: String] = [
         "Pragma": "no-cache",
         "Cache-Control": "no-cache",
-        "Origin": "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold"
+        "Origin": "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
+        "Sec-WebSocket-Version": "13"
     ]
 
     private static let rfc2616Formatter: DateFormatter = {
@@ -138,6 +140,10 @@ public final class EdgeTTSService: EdgeTTSClient {
         let payload = String(format: "%.0f%@", ticks, Self.trustedClientToken)
         let hash = SHA256.hash(data: Data(payload.utf8))
         return hash.map { String(format: "%02X", $0) }.joined()
+    }
+
+    private func generateMuid() -> String {
+        UUID().uuidString.replacingOccurrences(of: "-", with: "").uppercased()
     }
 
     // MARK: - Public API
@@ -1345,6 +1351,7 @@ public final class EdgeTTSService: EdgeTTSClient {
         for (key, value) in Self.websocketHeaders {
             request.setValue(value, forHTTPHeaderField: key)
         }
+        request.setValue("muid=\(generateMuid());", forHTTPHeaderField: "Cookie")
 
         let task = session.webSocketTask(with: request)
         task.resume()
@@ -1432,7 +1439,12 @@ public final class EdgeTTSService: EdgeTTSClient {
         let headers = parseHeaders(from: headerString)
         guard headers["Path"] == "audio" else { return nil }
 
-        let bodyStart = headerEnd
+        let bodyStart: Data.Index
+        if data.count >= headerEnd + 2, data[headerEnd] == 13, data[headerEnd + 1] == 10 {
+            bodyStart = headerEnd + 2
+        } else {
+            bodyStart = headerEnd
+        }
         let audioData = data[bodyStart...]
         return audioData.isEmpty ? nil : Data(audioData)
     }
@@ -1485,4 +1497,3 @@ public final class EdgeTTSService: EdgeTTSClient {
         return parts[0] + "-" + parts[1]
     }
 }
-
